@@ -1,0 +1,109 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <title>내 차 어디?</title>
+  <meta name="theme-color" content="#f7f2e9" />
+  <style>
+    * { box-sizing: border-box; }
+    body { margin:0; background:#f7f2e9; font-family: system-ui, -apple-system, BlinkMacSystemFont, sans-serif; color:#111; }
+    .app { width:min(430px,100vw); min-height:100vh; margin:0 auto; padding:22px 22px 96px; position:relative; background:#f7f2e9; }
+    .top { display:flex; justify-content:flex-end; height:58px; }
+    .logo { width:78px; height:auto; }
+    .asset-title { display:block; max-width:230px; margin:16px 0 12px; }
+    .photo-box { position:relative; width:100%; aspect-ratio: 1.32/1; border:3px solid #111; border-radius:22px; background:#fff; overflow:hidden; display:flex; align-items:center; justify-content:center; }
+    .photo-box img.preview { width:100%; height:100%; object-fit:cover; display:none; }
+    .tap-photo { width:155px; opacity:.95; }
+    input[type=file] { position:absolute; inset:0; opacity:0; cursor:pointer; }
+    textarea { width:100%; height:92px; background:#fff; border:3px solid #111; border-radius:18px; padding:14px; font-size:18px; outline:none; resize:none; }
+    .floor { margin:12px 0 18px; display:flex; align-items:center; gap:8px; flex-wrap:wrap; }
+    .floor-btn { border:0; background:transparent; padding:0; display:flex; align-items:center; gap:5px; }
+    .floor-btn img.label { width:54px; } .floor-btn img.check { width:18px; }
+    .floor input { width:72px; height:42px; border:0; border-bottom:3px solid #111; background:transparent; text-align:center; font-size:24px; outline:none; }
+    .floor span { font-size:22px; }
+    .img-btn { width:100%; border:0; background:transparent; padding:0; margin:8px 0; } .img-btn img { width:100%; max-height:80px; object-fit:contain; }
+    .hidden { display:none !important; }
+    .timer { font-size:42px; font-weight:900; text-align:center; margin:6px 0 14px; letter-spacing:-1px; }
+    .card { position:relative; background:#fff; border:3px solid #111; border-radius:24px; padding:16px; margin:12px 0; }
+    .card-photo { width:100%; max-height:230px; object-fit:cover; border-radius:16px; border:2px solid #111; background:#eee; }
+    .meta { font-size:20px; line-height:1.5; margin-top:10px; white-space:pre-wrap; }
+    .small { font-size:14px; opacity:.65; }
+    .bottom { position:fixed; left:50%; bottom:0; transform:translateX(-50%); width:min(430px,100vw); background:#f7f2e9; border-top:2px solid rgba(0,0,0,.08); padding:10px 22px calc(10px + env(safe-area-inset-bottom)); display:flex; justify-content:space-between; align-items:center; }
+    .bottom button { border:0; background:transparent; padding:0; font-size:14px; font-weight:700; }
+    .bottom img { height:42px; max-width:120px; object-fit:contain; }
+    .list-empty { text-align:center; margin:80px 0; font-size:18px; opacity:.65; }
+  </style>
+</head>
+<body>
+  <main class="app">
+    <div class="top"><img class="logo" src="assets/logo-parking.svg" /></div>
+
+    <section id="home">
+      <img class="asset-title" src="assets/title-photo.svg" />
+      <label class="photo-box">
+        <img id="preview" class="preview" alt="주차 위치 사진" />
+        <img id="tapPhoto" class="tap-photo" src="assets/tap-photo.svg" />
+        <input id="photoInput" type="file" accept="image/*" capture="environment" />
+      </label>
+      <img class="asset-title" src="assets/title-memo.svg" />
+      <textarea id="memo" placeholder="예) B2 13번 기둥 근처"></textarea>
+      <div class="floor">
+        <button class="floor-btn" data-type="upper"><img class="check" id="checkUpper" src="assets/checkbox-off.svg"><img class="label" src="assets/floor-upper.svg"></button>
+        <button class="floor-btn" data-type="under"><img class="check" id="checkUnder" src="assets/checkbox-on.svg"><img class="label" src="assets/floor-under.svg"></button>
+        <input id="floor" inputmode="numeric" placeholder="" /><span>층</span>
+      </div>
+      <button id="startBtn" class="img-btn"><img src="assets/btn-save.svg" alt="주차 시작" /></button>
+    </section>
+
+    <section id="parking" class="hidden">
+      <img class="asset-title" src="assets/title-parking.svg" />
+      <div id="timer" class="timer">0분</div>
+      <div class="card">
+        <img id="parkPhoto" class="card-photo" />
+        <div id="parkMeta" class="meta"></div>
+      </div>
+      <button id="rememberBtn" class="img-btn"><img src="assets/btn-remember.svg" /></button>
+      <button id="finishBtn" class="img-btn"><img src="assets/btn-finish.svg" /></button>
+    </section>
+
+    <section id="saved" class="hidden">
+      <img class="asset-title" src="assets/title-saved-spot.svg" />
+      <div id="savedList"></div>
+      <button id="newBtn" class="img-btn"><img src="assets/btn-new.svg" /></button>
+    </section>
+  </main>
+  <nav class="bottom">
+    <button id="navHome">새로 주차</button>
+    <button id="navSaved"><img src="assets/btn-saved.svg" alt="저장됨" /></button>
+  </nav>
+
+<script>
+const $ = (id)=>document.getElementById(id);
+let currentPhoto = '';
+let floorType = localStorage.getItem('floorType') || 'under';
+const KEY_CURRENT='wmc_current', KEY_SAVED='wmc_saved';
+
+function compressImage(file){ return new Promise((resolve)=>{ const r=new FileReader(); r.onload=()=>{ const img=new Image(); img.onload=()=>{ const max=1200; let {width:w,height:h}=img; if(w>max||h>max){ const ratio=Math.min(max/w,max/h); w*=ratio; h*=ratio; } const c=document.createElement('canvas'); c.width=w; c.height=h; const ctx=c.getContext('2d'); ctx.drawImage(img,0,0,w,h); resolve(c.toDataURL('image/jpeg',0.72)); }; img.src=r.result; }; r.readAsDataURL(file); }); }
+function setFloor(type){ floorType=type; localStorage.setItem('floorType', type); $('checkUpper').src=`assets/checkbox-${type==='upper'?'on':'off'}.svg`; $('checkUnder').src=`assets/checkbox-${type==='under'?'on':'off'}.svg`; }
+document.querySelectorAll('.floor-btn').forEach(b=>b.onclick=()=>setFloor(b.dataset.type)); setFloor(floorType);
+$('photoInput').onchange=async(e)=>{ const f=e.target.files[0]; if(!f) return; currentPhoto=await compressImage(f); $('preview').src=currentPhoto; $('preview').style.display='block'; $('tapPhoto').style.display='none'; };
+function getCurrent(){ try{return JSON.parse(localStorage.getItem(KEY_CURRENT)||'null')}catch{return null} }
+function setCurrent(v){ localStorage.setItem(KEY_CURRENT, JSON.stringify(v)); }
+function getSaved(){ try{return JSON.parse(localStorage.getItem(KEY_SAVED)||'[]')}catch{return []} }
+function setSaved(v){ localStorage.setItem(KEY_SAVED, JSON.stringify(v)); }
+function show(name){ ['home','parking','saved'].forEach(id=>$(id).classList.toggle('hidden',id!==name)); if(name==='parking') renderParking(); if(name==='saved') renderSaved(); }
+$('startBtn').onclick=()=>{ if(!currentPhoto){ alert('기둥 사진을 먼저 찍어주세요'); return; } const item={id:Date.now(), photo:currentPhoto, memo:$('memo').value.trim(), floorType, floor:$('floor').value.trim(), startedAt:Date.now()}; setCurrent(item); show('parking'); };
+function elapsedText(ms){ const m=Math.floor(ms/60000), h=Math.floor(m/60), d=Math.floor(h/24); if(d>0) return `${d}일 ${h%24}시간 ${m%60}분`; if(h>0) return `${h}시간 ${m%60}분`; return `${m}분`; }
+function renderParking(){ const item=getCurrent(); if(!item){ show('home'); return; } $('parkPhoto').src=item.photo; const label=item.floorType==='upper'?'지상':'지하'; $('parkMeta').textContent=`${label} ${item.floor||''}층\n${item.memo||'메모 없음'}`; updateTimer(); }
+function updateTimer(){ const item=getCurrent(); if(item&&!$('parking').classList.contains('hidden')) $('timer').textContent=elapsedText(Date.now()-item.startedAt); }
+setInterval(updateTimer, 10000);
+$('rememberBtn').onclick=()=>{ const item=getCurrent(); if(!item) return; const saved=getSaved(); if(!saved.find(x=>x.id===item.id)) { saved.unshift({...item, savedAt:Date.now()}); setSaved(saved); } alert('저장됨에 넣어뒀어요'); };
+$('finishBtn').onclick=()=>{ if(confirm('출차 완료하고 현재 기록을 삭제할까요?')){ localStorage.removeItem(KEY_CURRENT); currentPhoto=''; $('memo').value=''; $('floor').value=''; $('preview').style.display='none'; $('tapPhoto').style.display='block'; show('home'); } };
+function renderSaved(){ const list=getSaved(); if(!list.length){ $('savedList').innerHTML='<div class="list-empty">저장된 주차 위치가 없어요</div>'; return; } $('savedList').innerHTML=list.map(item=>{ const label=item.floorType==='upper'?'지상':'지하'; return `<div class="card"><img class="card-photo" src="${item.photo}"><div class="meta">${label} ${item.floor||''}층<br>${(item.memo||'메모 없음').replace(/</g,'&lt;')}</div><button class="small" onclick="deleteSaved(${item.id})">삭제</button></div>` }).join(''); }
+window.deleteSaved=(id)=>{ setSaved(getSaved().filter(x=>x.id!==id)); renderSaved(); };
+$('newBtn').onclick=()=>show('home'); $('navHome').onclick=()=>show(getCurrent()?'parking':'home'); $('navSaved').onclick=()=>show('saved');
+if(getCurrent()) show('parking');
+</script>
+</body>
+</html>
