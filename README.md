@@ -1,20 +1,13 @@
-# Where Is My Car MVP
+# Where I Park MVP
 
-정적 웹앱입니다. 빌드가 필요 없습니다.
+정적 HTML 기반 주차 위치 기록 웹앱입니다.
 
-## 배포 방법
-1. 새 GitHub Repository 생성
-2. 이 ZIP 압축 해제
-3. `index.html`, `README.md`, `assets` 폴더를 그대로 업로드
-4. Vercel에서 해당 Repository Import
-5. Framework Preset은 `Other` 또는 기본값으로 배포
-
-## 기능
-- 사진 촬영
-- 메모 저장
-- 지상/지하/층 입력
-- 주차 타이머
-- 출차 완료 시 현재 기록 삭제
-- 저장됨 목록 보관
-
-데이터는 서버가 아니라 브라우저 localStorage에 저장됩니다.
+## 반영 내용
+- design3.svg 에셋 반영
+- 하단 새로주차/저장됨 버튼 크기 축소
+- 하단 새로주차 클릭 시 현재 주차 기록 리셋
+- 저장 카드 삭제 버튼 위치/크기 조정
+- 저장된 주차 위치 화면의 새로주차하기 버튼 제거
+- 로고 제외 주요 SVG 이미지 크기 80% 조정
+- 층 SVG 디자인 적용
+- 지상/지하/층 라벨 높이 통일
