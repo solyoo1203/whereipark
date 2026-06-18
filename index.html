@@ -8,10 +8,10 @@
   <style>
     * { box-sizing: border-box; }
     body { margin:0; background:#f7f2e9; font-family: system-ui, -apple-system, BlinkMacSystemFont, sans-serif; color:#111; }
-    .app { width:min(430px,100vw); min-height:100vh; margin:0 auto; padding:22px 22px 96px; position:relative; background:#f7f2e9; }
+    .app { width:min(430px,100vw); min-height:100vh; margin:0 auto; padding:calc(28px + env(safe-area-inset-top)) 22px 120px; position:relative; background:#f7f2e9; }
     .top { display:flex; justify-content:flex-end; height:58px; }
     .logo { width:78px; height:auto; }
-    .asset-title { display:block; max-width:230px; margin:16px 0 12px; }
+    .asset-title { display:block; height:56px; width:auto; max-width:92%; margin:16px 0 12px; object-fit:contain; }
     .photo-box { position:relative; width:100%; aspect-ratio: 1.32/1; border:3px solid #111; border-radius:22px; background:#fff; overflow:hidden; display:flex; align-items:center; justify-content:center; }
     .photo-box img.preview { width:100%; height:100%; object-fit:cover; display:none; }
     .tap-photo { width:155px; opacity:.95; }
@@ -19,19 +19,26 @@
     textarea { width:100%; height:92px; background:#fff; border:3px solid #111; border-radius:18px; padding:14px; font-size:18px; outline:none; resize:none; }
     .floor { margin:12px 0 18px; display:flex; align-items:center; gap:8px; flex-wrap:wrap; }
     .floor-btn { border:0; background:transparent; padding:0; display:flex; align-items:center; gap:5px; }
-    .floor-btn img.label { width:54px; } .floor-btn img.check { width:18px; }
+    .floor-btn img.label { height:38px; width:auto; } .floor-btn img.check { width:18px; height:18px; }
     .floor input { width:72px; height:42px; border:0; border-bottom:3px solid #111; background:transparent; text-align:center; font-size:24px; outline:none; }
     .floor span { font-size:22px; }
-    .img-btn { width:100%; border:0; background:transparent; padding:0; margin:8px 0; } .img-btn img { width:100%; max-height:80px; object-fit:contain; }
+    .img-btn { width:100%; border:0; background:transparent; padding:0; margin:10px 0; display:flex; justify-content:center; align-items:center; }
+    .img-btn img { width:auto; height:auto; object-fit:contain; display:block; }
+    .main-save img { width:88%; max-width:360px; }
+    .parking-action img { height:74px; max-width:92%; }
+    .saved-new img { height:64px; max-width:92%; }
     .hidden { display:none !important; }
     .timer { font-size:42px; font-weight:900; text-align:center; margin:6px 0 14px; letter-spacing:-1px; }
     .card { position:relative; background:#fff; border:3px solid #111; border-radius:24px; padding:16px; margin:12px 0; }
     .card-photo { width:100%; max-height:230px; object-fit:cover; border-radius:16px; border:2px solid #111; background:#eee; }
     .meta { font-size:20px; line-height:1.5; margin-top:10px; white-space:pre-wrap; }
+    .date-line { font-size:14px; opacity:.65; margin:10px 0 2px; }
+    .card-delete { position:absolute; top:12px; right:12px; width:34px; height:34px; border:0; border-radius:50%; background:rgba(255,255,255,.86); color:#e02b2b; font-size:28px; line-height:28px; font-weight:700; display:flex; align-items:center; justify-content:center; padding:0; }
     .small { font-size:14px; opacity:.65; }
-    .bottom { position:fixed; left:50%; bottom:0; transform:translateX(-50%); width:min(430px,100vw); background:#f7f2e9; border-top:2px solid rgba(0,0,0,.08); padding:10px 22px calc(10px + env(safe-area-inset-bottom)); display:flex; justify-content:space-between; align-items:center; }
-    .bottom button { border:0; background:transparent; padding:0; font-size:14px; font-weight:700; }
-    .bottom img { height:42px; max-width:120px; object-fit:contain; }
+    .bottom { position:fixed; left:50%; bottom:0; transform:translateX(-50%); width:min(430px,100vw); background:#f7f2e9; border-top:2px solid rgba(0,0,0,.08); padding:12px 22px calc(12px + env(safe-area-inset-bottom)); display:flex; justify-content:space-between; align-items:center; z-index:20; }
+    .bottom button { border:0; background:transparent; padding:0; display:flex; align-items:center; justify-content:center; }
+    .bottom img.nav-new { height:44px; width:auto; object-fit:contain; display:block; }
+    .bottom img.nav-saved { height:48px; width:auto; object-fit:contain; display:block; }
     .list-empty { text-align:center; margin:80px 0; font-size:18px; opacity:.65; }
   </style>
 </head>
@@ -53,7 +60,7 @@
         <button class="floor-btn" data-type="under"><img class="check" id="checkUnder" src="assets/checkbox-on.svg"><img class="label" src="assets/floor-under.svg"></button>
         <input id="floor" inputmode="numeric" placeholder="" /><span>층</span>
       </div>
-      <button id="startBtn" class="img-btn"><img src="assets/btn-save.svg" alt="주차 시작" /></button>
+      <button id="startBtn" class="img-btn main-save"><img src="assets/btn-save.svg" alt="주차 시작" /></button>
     </section>
 
     <section id="parking" class="hidden">
@@ -63,19 +70,19 @@
         <img id="parkPhoto" class="card-photo" />
         <div id="parkMeta" class="meta"></div>
       </div>
-      <button id="rememberBtn" class="img-btn"><img src="assets/btn-remember.svg" /></button>
-      <button id="finishBtn" class="img-btn"><img src="assets/btn-finish.svg" /></button>
+      <button id="finishBtn" class="img-btn parking-action"><img src="assets/btn-finish.svg" alt="출차 완료 및 기록 삭제" /></button>
+      <button id="rememberBtn" class="img-btn parking-action"><img src="assets/btn-remember.svg" alt="돌아올 때까지 기억" /></button>
     </section>
 
     <section id="saved" class="hidden">
       <img class="asset-title" src="assets/title-saved-spot.svg" />
       <div id="savedList"></div>
-      <button id="newBtn" class="img-btn"><img src="assets/btn-new.svg" /></button>
+      <button id="newBtn" class="img-btn saved-new"><img src="assets/btn-new.svg" alt="새로 주차하기" /></button>
     </section>
   </main>
   <nav class="bottom">
-    <button id="navHome">새로 주차</button>
-    <button id="navSaved"><img src="assets/btn-saved.svg" alt="저장됨" /></button>
+    <button id="navHome"><img class="nav-new" src="assets/btn-low%20new.svg" alt="새로 주차" /></button>
+    <button id="navSaved"><img class="nav-saved" src="assets/btn-saved.svg" alt="저장됨" /></button>
   </nav>
 
 <script>
@@ -100,7 +107,32 @@ function updateTimer(){ const item=getCurrent(); if(item&&!$('parking').classLis
 setInterval(updateTimer, 10000);
 $('rememberBtn').onclick=()=>{ const item=getCurrent(); if(!item) return; const saved=getSaved(); if(!saved.find(x=>x.id===item.id)) { saved.unshift({...item, savedAt:Date.now()}); setSaved(saved); } alert('저장됨에 넣어뒀어요'); };
 $('finishBtn').onclick=()=>{ if(confirm('출차 완료하고 현재 기록을 삭제할까요?')){ localStorage.removeItem(KEY_CURRENT); currentPhoto=''; $('memo').value=''; $('floor').value=''; $('preview').style.display='none'; $('tapPhoto').style.display='block'; show('home'); } };
-function renderSaved(){ const list=getSaved(); if(!list.length){ $('savedList').innerHTML='<div class="list-empty">저장된 주차 위치가 없어요</div>'; return; } $('savedList').innerHTML=list.map(item=>{ const label=item.floorType==='upper'?'지상':'지하'; return `<div class="card"><img class="card-photo" src="${item.photo}"><div class="meta">${label} ${item.floor||''}층<br>${(item.memo||'메모 없음').replace(/</g,'&lt;')}</div><button class="small" onclick="deleteSaved(${item.id})">삭제</button></div>` }).join(''); }
+function formatKoreanDate(ts){
+  const d=new Date(ts||Date.now());
+  const y=d.getFullYear();
+  const mo=d.getMonth()+1;
+  const day=d.getDate();
+  let h=d.getHours();
+  const min=String(d.getMinutes()).padStart(2,'0');
+  const ap=h<12?'오전':'오후';
+  h=h%12 || 12;
+  return `${y}. ${mo}. ${day} ${ap} ${h}:${min} 주차`;
+}
+function esc(t){ return String(t||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+function renderSaved(){
+  const list=getSaved();
+  if(!list.length){ $('savedList').innerHTML='<div class="list-empty">저장된 주차 위치가 없어요</div>'; return; }
+  $('savedList').innerHTML=list.map(item=>{
+    const label=item.floorType==='upper'?'지상':'지하';
+    const floorText=item.floor ? `${label} ${esc(item.floor)}층` : `${label} 층`;
+    return `<div class="card saved-card">
+      <button class="card-delete" onclick="deleteSaved(${item.id})" aria-label="삭제">×</button>
+      <img class="card-photo" src="${item.photo}" alt="저장된 주차 사진">
+      <div class="date-line">${formatKoreanDate(item.startedAt || item.savedAt)}</div>
+      <div class="meta">${floorText}<br>${esc(item.memo||'메모 없음')}</div>
+    </div>`;
+  }).join('');
+}
 window.deleteSaved=(id)=>{ setSaved(getSaved().filter(x=>x.id!==id)); renderSaved(); };
 $('newBtn').onclick=()=>show('home'); $('navHome').onclick=()=>show(getCurrent()?'parking':'home'); $('navSaved').onclick=()=>show('saved');
 if(getCurrent()) show('parking');
