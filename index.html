@@ -17,11 +17,12 @@
     .tap-photo { width:124px; opacity:.95; }
     input[type=file] { position:absolute; inset:0; opacity:0; cursor:pointer; }
     textarea { width:100%; height:92px; background:#fff; border:3px solid #111; border-radius:18px; padding:14px; font-size:18px; outline:none; resize:none; }
-    .floor { margin:8px 0 18px; display:flex; align-items:center; gap:8px; flex-wrap:nowrap; justify-content:flex-start; }
-    .floor-btn { border:0; background:transparent; padding:0; display:flex; align-items:center; gap:3px; height:26px; }
-    .floor-btn img.label, .floor-label-floor { height:24px; width:auto; object-fit:contain; display:block; } .floor-btn img.check { width:18px; height:18px; flex:0 0 auto; }
-    .floor input { width:54px; height:26px; border:0; border-bottom:2px solid #111; background:transparent; text-align:center; font-size:18px; outline:none; align-self:center; }
-    .floor span { font-size:22px; }
+    .floor { margin:14px 0 30px; display:flex; align-items:center; justify-content:flex-start; gap:10px; flex-wrap:nowrap; }
+    .floor-check { display:flex; align-items:center; gap:4px; border:0; background:transparent; padding:0; font-size:22px; line-height:1; color:#111; white-space:nowrap; }
+    .floor-check input { appearance:none; -webkit-appearance:none; width:22px; height:22px; border:2px solid #111; border-radius:4px; background:#fff; margin:0; position:relative; flex:0 0 auto; }
+    .floor-check input:checked::after { content:'✓'; position:absolute; left:2px; top:-6px; font-size:28px; line-height:1; font-weight:700; }
+    .floor input.floor-number { width:62px; height:28px; border:0; border-bottom:3px solid #111; background:transparent; text-align:center; font-size:22px; outline:none; align-self:center; }
+    .floor-text { font-size:22px; line-height:1; }
     .img-btn { width:100%; border:0; background:transparent; padding:0; margin:10px 0; display:flex; justify-content:center; align-items:center; }
     .img-btn img { width:auto; height:auto; object-fit:contain; display:block; }
     .main-save { margin-top:2px; }
@@ -57,9 +58,10 @@
       <img class="asset-title" src="assets/title-memo.svg" />
       <textarea id="memo" placeholder="예) B2 13번 기둥 근처"></textarea>
       <div class="floor">
-        <button class="floor-btn" data-type="upper"><img class="check" id="checkUpper" src="assets/checkbox-off.svg"><img class="label" src="assets/floor-upper.svg"></button>
-        <button class="floor-btn" data-type="under"><img class="check" id="checkUnder" src="assets/checkbox-on.svg"><img class="label" src="assets/floor-under.svg"></button>
-        <input id="floor" inputmode="numeric" placeholder="" /><img class="floor-label-floor" src="assets/floor-row.svg" alt="층" />
+        <label class="floor-check"><input id="upperFloor" type="checkbox" /> <span>지상</span></label>
+        <label class="floor-check"><input id="underFloor" type="checkbox" /> <span>지하</span></label>
+        <input id="floor" class="floor-number" inputmode="numeric" placeholder="" />
+        <span class="floor-text">층</span>
       </div>
       <button id="startBtn" class="img-btn main-save"><img src="assets/btn-save.svg" alt="주차 시작" /></button>
     </section>
@@ -92,8 +94,15 @@ let floorType = localStorage.getItem('floorType') || 'under';
 const KEY_CURRENT='wmc_current', KEY_SAVED='wmc_saved';
 
 function compressImage(file){ return new Promise((resolve)=>{ const r=new FileReader(); r.onload=()=>{ const img=new Image(); img.onload=()=>{ const max=1200; let {width:w,height:h}=img; if(w>max||h>max){ const ratio=Math.min(max/w,max/h); w*=ratio; h*=ratio; } const c=document.createElement('canvas'); c.width=w; c.height=h; const ctx=c.getContext('2d'); ctx.drawImage(img,0,0,w,h); resolve(c.toDataURL('image/jpeg',0.72)); }; img.src=r.result; }; r.readAsDataURL(file); }); }
-function setFloor(type){ floorType=type; localStorage.setItem('floorType', type); $('checkUpper').src=`assets/checkbox-${type==='upper'?'on':'off'}.svg`; $('checkUnder').src=`assets/checkbox-${type==='under'?'on':'off'}.svg`; }
-document.querySelectorAll('.floor-btn').forEach(b=>b.onclick=()=>setFloor(b.dataset.type)); setFloor(floorType);
+function setFloor(type){
+  floorType=type;
+  localStorage.setItem('floorType', type);
+  $('upperFloor').checked = type === 'upper';
+  $('underFloor').checked = type === 'under';
+}
+$('upperFloor').onchange = () => setFloor('upper');
+$('underFloor').onchange = () => setFloor('under');
+setFloor(floorType);
 $('photoInput').onchange=async(e)=>{ const f=e.target.files[0]; if(!f) return; currentPhoto=await compressImage(f); $('preview').src=currentPhoto; $('preview').style.display='block'; $('tapPhoto').style.display='none'; };
 function getCurrent(){ try{return JSON.parse(localStorage.getItem(KEY_CURRENT)||'null')}catch{return null} }
 function setCurrent(v){ localStorage.setItem(KEY_CURRENT, JSON.stringify(v)); }
